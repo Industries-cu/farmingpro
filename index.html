@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autenticación Farming</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        #register-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #register-btn:hover {
+            background-color: #45a049;
+        }
+
+        #login-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        #login-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        .error {
+            color: #f44336;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .panel {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .user-info {
+            margin-bottom: 20px;
+        }
+
+        .dog-container {
+            margin: 20px 0;
+        }
+
+        .dog-image {
+            border-radius: 10px;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .dog-message {
+            font-size: 18px;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        #logout-btn {
+            background-color: #f44336;
+            color: white;
+            margin-top: 20px;
+        }
+
+        #logout-btn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="auth-container">
+        <h1>¡Bienvenido a Farming!</h1>
+        <div class="form-group">
+            <input type="text" id="email" placeholder="Correo electrónico" required>
+        </div>
+        <div class="form-group">
+            <input type="password" id="password" placeholder="Contraseña" required>
+        </div>
+        <div class="button-group">
+            <button id="register-btn">Registrar</button>
+            <button id="login-btn">Iniciar Sesión</button>
+        </div>
+        <p id="error-message" class="error"></p>
+    </div>
+
+    <div class="panel" id="user-panel" style="display: none;">
+        <div class="user-info">
+            <h2>Bienvenido, <span id="username-display"></span>!</h2>
+            <div class="dog-container">
+                <img src="https://placedog.net/200" alt="Perro feliz" class="dog-image">
+                <p class="dog-message">¡Has iniciado sesión correctamente en Farming!</p>
+            </div>
+            <button id="logout-btn">Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <!-- Firebase v9+ (Modular) -->
+    <script type="module">
+        // Importaciones de Firebase
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            signOut,
+            onAuthStateChanged 
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        // Configuración de tu proyecto Farming
+        const firebaseConfig = {
+            apiKey: "AIzaSyCdJpLLtR5gpvK00SbVTF8MT3N27HcqkAE",
+            authDomain: "farming-5beb1.firebaseapp.com",
+            projectId: "farming-5beb1",
+            storageBucket: "farming-5beb1.appspot.com",
+            messagingSenderId: "187107202941",
+            appId: "1:187107202941:web:d15bf06cb3eeacf4021e14"
+        };
+
+        // Inicializa Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Referencias a elementos del DOM
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const registerBtn = document.getElementById('register-btn');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const errorMessage = document.getElementById('error-message');
+        const authContainer = document.getElementById('auth-container');
+        const userPanel = document.getElementById('user-panel');
+        const usernameDisplay = document.getElementById('username-display');
+
+        // Registrar usuario
+        registerBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                showUserPanel(userCredential.user);
+            } catch (error) {
+                errorMessage.textContent = error.message;
+            }
+        });
+
+        // Iniciar sesión
+        loginBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                showUserPanel(userCredential.user);
+            } catch (error) {
+                errorMessage.textContent = error.message;
+            }
+        });
+
+        // Cerrar sesión
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                authContainer.style.display = 'block';
+                userPanel.style.display = 'none';
+                emailInput.value = '';
+                passwordInput.value = '';
+                errorMessage.textContent = '';
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+            }
+        });
+
+        // Mostrar panel de usuario
+        function showUserPanel(user) {
+            authContainer.style.display = 'none';
+            userPanel.style.display = 'block';
+            usernameDisplay.textContent = user.email.split('@')[0];
+        }
+
+        // Observador de autenticación
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                showUserPanel(user);
+            } else {
+                authContainer.style.display = 'block';
+                userPanel.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
